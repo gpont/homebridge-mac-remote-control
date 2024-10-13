@@ -5,6 +5,7 @@ import {
   CharacteristicSetCallback,
   CharacteristicValue,
   HAP,
+  PlatformAccessory,
 } from "homebridge";
 import robot from "robotjs";
 
@@ -32,14 +33,19 @@ export class MacOSControlAccessory implements AccessoryPlugin {
 
   private isMouseControl = false;
 
-  constructor(hap: HAP, log: Logging) {
+  constructor(
+    hap: HAP,
+    log: Logging,
+    uuid: string,
+    accessory: PlatformAccessory
+  ) {
     this.log = log;
     this.name = "MacOS Controller";
 
     this.informationService = new hap.Service.AccessoryInformation()
       .setCharacteristic(hap.Characteristic.Manufacturer, "Custom")
       .setCharacteristic(hap.Characteristic.Model, "MacOS Remote Control")
-      .setCharacteristic(hap.Characteristic.SerialNumber, "123-456-787");
+      .setCharacteristic(hap.Characteristic.SerialNumber, uuid);
 
     this.tvService = new hap.Service.Television(this.name, "Television")
       .setCharacteristic(hap.Characteristic.ConfiguredName, this.name)
@@ -73,6 +79,8 @@ export class MacOSControlAccessory implements AccessoryPlugin {
     this.createInputSource(hap, "Escape", "escape", 6);
     this.createInputSource(hap, "Space", "space", 7);
     this.createInputSource(hap, "Cmd+Tab", "cmdTab", 8);
+
+    this.getServices().forEach((service) => accessory.addService(service));
   }
 
   getServices(): Service[] {
