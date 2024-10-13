@@ -1,0 +1,42 @@
+{
+  "name": "homebridge-mac-remote-control",
+  "version": "0.1.0",
+  "description": "Homebridge platform plugin for using virtual tv remote on ios for controlling mac os",
+  "main": "dist/static-platform.js",
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "build": "rimraf ./dist && tsc",
+    "prepublishOnly": "npm run build",
+    "postpublish": "npm run clean",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Evgenii Guzhikhin <gpont97@gmail.com>",
+  "engines": {
+    "homebridge": ">=1.0.0"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "tv-remote"
+  ],
+  "license": "ISC",
+  "files": [
+    "LICENSE",
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/gpont/homebridge-mac-remote-control.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gpont/homebridge-mac-remote-control/issues"
+  },
+  "devDependencies": {
+    "@types/node": "16.11.7",
+    "homebridge": "^1.6.1",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "robotjs": "^0.6.0"
+  }
+}
