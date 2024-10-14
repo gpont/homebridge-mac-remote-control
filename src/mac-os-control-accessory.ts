@@ -1,13 +1,12 @@
 import {
   AccessoryPlugin,
-  Logging,
   Service,
   CharacteristicSetCallback,
   CharacteristicValue,
-  HAP,
   PlatformAccessory,
 } from "homebridge";
 import robot from "robotjs";
+import type { MacOsTvRemoteControlPlatform } from "./mac-os-tv-remote-control-platform";
 
 type KeyName = "up" | "down" | "left" | "right" | "enter" | "escape" | "space";
 
@@ -24,9 +23,7 @@ const KEYS_MAP: Record<number, KeyName> = {
 };
 
 export class MacOSControlAccessory implements AccessoryPlugin {
-  private readonly log: Logging;
-  private readonly name: string;
-  private readonly informationService: Service;
+  private readonly name = "MacOS Controller";
   private readonly tvService: Service;
   private readonly speakerService: Service;
   private readonly inputServices: Service[] = [];
@@ -34,74 +31,100 @@ export class MacOSControlAccessory implements AccessoryPlugin {
   private isMouseControl = false;
 
   constructor(
-    hap: HAP,
-    log: Logging,
-    uuid: string,
-    accessory: PlatformAccessory
+    private readonly platform: MacOsTvRemoteControlPlatform,
+    private readonly accessory: PlatformAccessory
   ) {
-    this.log = log;
-    this.name = "MacOS Controller";
-
-    this.informationService = new hap.Service.AccessoryInformation()
-      .setCharacteristic(hap.Characteristic.Manufacturer, "Custom")
-      .setCharacteristic(hap.Characteristic.Model, "MacOS Remote Control")
-      .setCharacteristic(hap.Characteristic.SerialNumber, uuid);
-
-    this.tvService = new hap.Service.Television(this.name, "Television")
-      .setCharacteristic(hap.Characteristic.ConfiguredName, this.name)
+    this.accessory
+      .getService(this.platform.api.hap.Service.AccessoryInformation)!
       .setCharacteristic(
-        hap.Characteristic.SleepDiscoveryMode,
-        hap.Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE
+        this.platform.api.hap.Characteristic.Manufacturer,
+        "Custom"
+      )
+      .setCharacteristic(
+        this.platform.api.hap.Characteristic.Model,
+        "MacOS Remote Control"
+      )
+      .setCharacteristic(
+        this.platform.api.hap.Characteristic.SerialNumber,
+        "123-456-123"
       );
 
+    this.accessory.category = this.platform.api.hap.Categories.TELEVISION;
+
+    this.tvService = this.accessory.addService(
+      this.platform.api.hap.Service.Television,
+      this.name
+    );
+    this.tvService.setCharacteristic(
+      this.platform.api.hap.Characteristic.ConfiguredName,
+      this.name
+    );
+    this.tvService.setCharacteristic(
+      this.platform.api.hap.Characteristic.SleepDiscoveryMode,
+      this.platform.api.hap.Characteristic.SleepDiscoveryMode
+        .ALWAYS_DISCOVERABLE
+    );
+
     this.tvService
-      .getCharacteristic(hap.Characteristic.Active)
+      .getCharacteristic(this.platform.api.hap.Characteristic.Active)
       .on("set", this.handlePower.bind(this));
 
     this.tvService
-      .getCharacteristic(hap.Characteristic.RemoteKey)
+      .getCharacteristic(this.platform.api.hap.Characteristic.RemoteKey)
       .on("set", this.handleRemoteKey.bind(this));
 
-    this.speakerService = new hap.Service.TelevisionSpeaker(
+    this.speakerService = this.accessory.addService(
+      this.platform.api.hap.Service.TelevisionSpeaker,
+      `${this.name} Speaker`,
       `${this.name} Speaker`
-    ).setCharacteristic(
-      hap.Characteristic.VolumeControlType,
-      hap.Characteristic.VolumeControlType.RELATIVE
+    );
+    this.speakerService.setCharacteristic(
+      this.platform.api.hap.Characteristic.VolumeControlType,
+      this.platform.api.hap.Characteristic.VolumeControlType.RELATIVE
     );
 
     this.tvService.addLinkedService(this.speakerService);
 
-    this.createInputSource(hap, "Arrow Left", "left", 1);
-    this.createInputSource(hap, "Arrow Right", "right", 2);
-    this.createInputSource(hap, "Arrow Up", "up", 3);
-    this.createInputSource(hap, "Arrow Down", "down", 4);
-    this.createInputSource(hap, "Enter", "enter", 5);
-    this.createInputSource(hap, "Escape", "escape", 6);
-    this.createInputSource(hap, "Space", "space", 7);
-    this.createInputSource(hap, "Cmd+Tab", "cmdTab", 8);
+    this.createInputSource("Arrow Left", "left", 1);
+    this.createInputSource("Arrow Right", "right", 2);
+    this.createInputSource("Arrow Up", "up", 3);
+    this.createInputSource("Arrow Down", "down", 4);
+    this.createInputSource("Enter", "enter", 5);
+    this.createInputSource("Escape", "escape", 6);
+    this.createInputSource("Space", "space", 7);
+    this.createInputSource("Cmd+Tab", "cmdTab", 8);
 
-    this.getServices().forEach((service) => accessory.addService(service));
+    // this.getServices().forEach((service) => {
+    //   this.log.debug("Adding service", service.displayName, service.subtype);
+    //   accessory.addService(service);
+    // });
   }
 
   getServices(): Service[] {
-    return [this.informationService, this.tvService];
+    // return [this.informationService, this.tvService];
+    return [this.tvService];
   }
 
-  private createInputSource(hap: HAP, name: string, key: string, id: number) {
-    const inputSource = new hap.Service.InputSource(name, `InputSource${key}`);
+  private createInputSource(name: string, key: string, id: number) {
+    const inputSource = new this.platform.api.hap.Service.InputSource(
+      name,
+      `InputSource${key}`
+    );
     inputSource
-      .setCharacteristic(hap.Characteristic.Identifier, id)
-      .setCharacteristic(hap.Characteristic.ConfiguredName, name)
+      .setCharacteristic(this.platform.api.hap.Characteristic.Identifier, id)
       .setCharacteristic(
-        hap.Characteristic.IsConfigured,
-        hap.Characteristic.IsConfigured.CONFIGURED
+        this.platform.api.hap.Characteristic.ConfiguredName,
+        name
       )
       .setCharacteristic(
-        hap.Characteristic.InputSourceType,
-        hap.Characteristic.InputSourceType.OTHER
+        this.platform.api.hap.Characteristic.IsConfigured,
+        this.platform.api.hap.Characteristic.IsConfigured.CONFIGURED
+      )
+      .setCharacteristic(
+        this.platform.api.hap.Characteristic.InputSourceType,
+        this.platform.api.hap.Characteristic.InputSourceType.OTHER
       );
 
-    inputSource.getCharacteristic(hap.Characteristic.ConfiguredName);
     this.tvService.addLinkedService(inputSource);
     this.inputServices.push(inputSource);
   }
@@ -118,7 +141,7 @@ export class MacOSControlAccessory implements AccessoryPlugin {
       this.switchMouseControl();
       // this.pressCmdTab();
     } else {
-      this.log(`Unhandled remote key: ${value}`);
+      this.platform.log.warn(`Unhandled remote key: ${value}`);
     }
     callback(null);
   }
@@ -127,12 +150,12 @@ export class MacOSControlAccessory implements AccessoryPlugin {
     value: CharacteristicValue,
     callback: CharacteristicSetCallback
   ) {
-    this.log(`Power state set to: ${value}`);
+    this.platform.log.debug(`Power state set to: ${value}`);
     callback(null);
   }
 
   private pressKey(key: KeyName) {
-    this.log(`Pressing ${key} key`);
+    this.platform.log.debug(`Pressing ${key} key`);
     if (
       this.isMouseControl &&
       ["up", "down", "left", "right", "enter"].includes(key)
@@ -174,7 +197,7 @@ export class MacOSControlAccessory implements AccessoryPlugin {
   }
 
   private pressCmdTab() {
-    this.log(`Pressing Cmd+Tab combination`);
+    this.platform.log.debug(`Pressing Cmd+Tab combination`);
     robot.keyToggle("command", "down");
     robot.keyTap("tab");
     robot.keyToggle("command", "up");

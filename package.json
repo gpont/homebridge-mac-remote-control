@@ -2,12 +2,14 @@
   "name": "homebridge-mac-remote-control",
   "version": "0.1.0",
   "description": "Homebridge platform plugin for using virtual tv remote on ios for controlling mac os",
-  "main": "dist/static-platform.js",
+  "main": "dist/index.js",
   "scripts": {
     "clean": "rimraf ./dist",
-    "build": "rimraf ./dist && tsc",
+    "build": "npm run clean && tsc",
     "prepublishOnly": "npm run build",
     "postpublish": "npm run clean",
+    "clearHBCache": "rm ~/.homebridge/accessories/cachedAccessories && rm -rf ~/.homebridge/persist",
+    "startHB": "npm run build && npm link && homebridge -I -D",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Evgenii Guzhikhin <gpont97@gmail.com>",
